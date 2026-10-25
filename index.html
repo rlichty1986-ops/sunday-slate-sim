@@ -1,0 +1,702 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Sunday Slate Sim</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column scoreboard app — slate list, tap a game to open its sim board with line score and box scores. */
+:root{
+  --bg:#F1F2EE; --panel:#FFFFFF; --fg:#14181A; --muted:#5E6762; --line:#D9DDD6; --soft:#E7EAE4;
+  --accent:#C77700; --accent-ink:#FFFFFF; --win:#1F6B3E; --warn:#B4521B; --out:#9A2B2B;
+  --display:"Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body:"IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1211; --panel:#161B1A; --fg:#E8ECE7; --muted:#97A29B; --line:#2A3230; --soft:#1F2624;
+  --accent:#F2A93B; --accent-ink:#1A1206; --win:#6FCB91; --warn:#F08A4B; --out:#F07B7B; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E1211; --panel:#161B1A; --fg:#E8ECE7; --muted:#97A29B; --line:#2A3230; --soft:#1F2624;
+  --accent:#F2A93B; --accent-ink:#1A1206; --win:#6FCB91; --warn:#F08A4B; --out:#F07B7B; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-direction:column;gap:4px}
+h1{font-family:var(--display);font-weight:800;font-size:2.6rem;line-height:.95;letter-spacing:.01em;text-transform:uppercase;margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:.9rem;margin:0}
+.seg{display:inline-flex;background:var(--soft);border-radius:999px;padding:4px;gap:4px;align-self:flex-start}
+.seg button{font:600 .95rem var(--body);letter-spacing:.06em;text-transform:uppercase;border:0;border-radius:999px;padding:8px 18px;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+button:focus-visible,.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;text-align:left;cursor:pointer;color:inherit;font:inherit;width:100%}
+.card:hover{border-color:var(--accent)}
+.card .top{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.card .live{color:var(--warn);font-weight:600}
+.row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.tm{font-family:var(--display);font-weight:800;font-size:1.5rem;text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.tm small{font-family:var(--body);font-weight:500;font-size:.85rem;color:var(--muted);text-transform:none;letter-spacing:0;margin-left:6px}
+.odds{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.inj{font-size:.78rem;color:var(--muted)}
+.cta{font:600 .8rem var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
+/* board */
+.back{align-self:flex-start;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:999px;padding:6px 14px;font:500 .9rem var(--body);cursor:pointer}
+.board{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.score{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.score .side{display:flex;flex-direction:column;gap:2px;min-width:0}
+.score .side.r{text-align:right}
+.score .nm{font-family:var(--display);font-weight:800;font-size:1.6rem;text-transform:uppercase;line-height:1}
+.score .city{font-size:.8rem;color:var(--muted)}
+.score .pts{font-family:var(--display);font-weight:800;font-size:4rem;line-height:.9;font-variant-numeric:tabular-nums}
+.score .pts.w{color:var(--accent)}
+.score .mid{font:600 .8rem var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center}
+.ls{overflow-x:auto}
+table{border-collapse:collapse;font-family:var(--mono);font-size:.82rem;font-variant-numeric:tabular-nums;width:100%}
+th,td{padding:6px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{font:600 .72rem var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+td:first-child,th:first-child{text-align:left;font-family:var(--body);font-size:.9rem;position:sticky;left:0;background:var(--panel)}
+tr.tot td{font-weight:600;border-top:1px solid var(--fg)}
+tr.bench-start td{border-top:1px dashed var(--muted)}
+.grp{color:var(--accent)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.run{background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:10px 20px;font:600 .95rem var(--body);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:none;color:var(--muted);font:600 .95rem var(--body);text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:3px solid transparent;cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.sec{display:flex;flex-direction:column;gap:6px}
+.sec h3{margin:6px 0 0;font:600 .78rem var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.box{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+.box table th:first-child,.box table td:first-child{min-width:150px}
+.st{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:middle}
+.avail{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:.78rem;border:1px solid var(--line);border-radius:999px;padding:3px 9px;background:var(--soft)}
+.chip.o{color:var(--out);border-color:color-mix(in srgb,var(--out) 40%,var(--line))}
+.chip.q{color:var(--warn)}
+.chip.ok{color:var(--win)}
+.note{font-size:.8rem;color:var(--muted);margin:0;max-width:65ch}
+.pos{color:var(--muted);font-size:.75rem;margin-left:5px}
+@media (max-width:480px){.score .pts{font-size:3.1rem}.score .nm{font-size:1.25rem}h1{font-size:2.1rem}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style></head><body>
+
+<div class="wrap">
+  <header>
+    <h1>Sunday Slate Sim</h1>
+    <p class="sub" id="sub">Today's games · Sun, Oct 25, 2026 · rosters, injuries and lineups checked 9:25 AM ET</p>
+  </header>
+  <div id="listView" class="wrap" style="max-width:none">
+    <div class="seg" role="group" aria-label="League">
+      <button id="bNFL" aria-pressed="true">NFL · 12</button>
+      <button id="bNBA" aria-pressed="false">NBA · 7</button>
+    </div>
+    <div class="list" id="list"></div>
+    <p class="note">Each simulation plays the game out play by play (NFL) or possession by possession (NBA) using current depth charts and starting lineups. Players ruled out never appear. Questionable players get a fresh coin flip each run, so they may play or sit. Team strength is tuned to today's betting lines.</p>
+  </div>
+  <div id="boardView" hidden></div>
+</div>
+<script>
+// Rosters, injuries and lines as of Sun Oct 25 2026, morning ET.
+// NBA row: [name, pos, starter, min, fga, fg3a, fg3p, fg2p, fta, ftp, ast, oreb, dreb, stl, blk, tov, pf, status]
+// status: "" active, "Q" questionable, "D" doubtful, "P" probable
+var NBA_TEAMS = {
+LAL:{name:"Lakers",city:"Los Angeles",r:1.5,out:["Cameron Carr (oblique)","Adou Thiero (knee)"],p:[
+["Luka Doncic","PG",1,36,21,9,.36,.55,8,.78,8.5,.8,7.5,1.6,.4,3.8,2.5,""],
+["Austin Reaves","SG",1,34,15,6,.37,.55,6,.87,5.5,.5,3.8,1.1,.3,2.4,2.2,""],
+["Ziaire Williams","SF",1,26,8,3.5,.35,.55,1.5,.78,1.2,.7,3,.9,.4,.9,2.3,""],
+["Matisse Thybulle","PF",1,24,5,3,.34,.55,.6,.7,1.3,.6,2,1.6,.7,.7,2.3,""],
+["Walker Kessler","C",1,28,7,.1,.2,.70,2.5,.55,1.5,3.3,6.5,.7,2.4,1.1,2.3,""],
+["Collin Sexton","G",0,22,11,3.5,.37,.52,3,.85,3,.4,1.6,.8,.1,1.8,2,""],
+["Jake LaRavia","F",0,18,6,3,.36,.55,1.2,.8,1.3,.8,2.6,.9,.5,.9,2,"Q"],
+["Sandro Mamukelashvili","F-C",0,16,5,2,.36,.55,1.2,.75,1.2,1,3,.5,.5,.8,2,""]]},
+UTA:{name:"Jazz",city:"Utah",r:-4,out:["Jusuf Nurkic (toe)"],p:[
+["Keyonte George","PG",1,33,16,7,.36,.50,5,.85,6.5,.4,3.4,.9,.2,3,2.2,""],
+["Darryn Peterson","SG",1,32,15,5,.35,.52,4.5,.8,3,.8,3.2,1.1,.4,2.4,2.2,""],
+["Ace Bailey","SF",1,28,12,4,.34,.51,2.5,.78,1.6,1,3.6,.8,.6,1.5,2.2,""],
+["Lauri Markkanen","PF",1,33,16,7.5,.37,.55,6,.88,1.6,1.5,5,.6,.5,1.6,1.8,""],
+["Jaren Jackson Jr.","C",1,30,13,4.5,.35,.55,5,.8,1.8,1.4,4.2,1.1,1.6,1.8,3.2,""],
+["Isaiah Collier","G",0,20,7,2,.32,.52,2.5,.7,4.5,.4,1.6,.9,.2,2,2,""],
+["Jaxson Hayes","C",0,18,5,0,.2,.70,1.5,.65,.8,1.6,3,.5,1,.8,2.3,""],
+["Svi Mykhailiuk","G-F",0,16,6,4,.37,.5,.8,.85,1.4,.3,1.8,.5,.1,.6,1.3,""],
+["Kyle Filipowski","C",0,14,5,1.5,.32,.54,1.2,.7,1.5,1.2,3,.5,.4,.9,1.6,""]]},
+IND:{name:"Pacers",city:"Indiana",r:0.5,out:["T.J. McConnell (hamstring)","Ben Sheppard (knee)","Johnny Furphy (ACL)"],p:[
+["Tyrese Haliburton","PG",1,34,14,7,.37,.52,2.8,.86,9.5,.5,3.2,1.3,.6,2.2,1.4,""],
+["Andrew Nembhard","SG",1,31,11,3.5,.35,.52,2.5,.82,5,.4,2.5,1,.2,1.8,2.5,""],
+["Aaron Nesmith","SF",1,28,9,5,.40,.55,2.5,.82,1.4,.8,3.6,.8,.5,1,3,"P"],
+["Pascal Siakam","PF",1,34,17,4,.36,.57,4.5,.75,3.5,1.4,5.4,1,.5,2.1,2.4,""],
+["Ivica Zubac","C",1,30,9.5,0,.2,.64,3.5,.7,2,3.2,7.5,.5,1.1,1.6,2.6,""],
+["Kelly Oubre Jr.","F",0,24,10,4.5,.33,.52,2.5,.72,1.3,1.1,3.3,1.1,.5,1,2.4,""],
+["Quenton Jackson","G",0,18,6.5,2.5,.34,.53,1.5,.8,2.4,.3,1.4,1,.2,1.1,2,""],
+["Jarace Walker","F",0,18,6,2.5,.34,.52,1.2,.7,1.8,1,2.8,.7,.6,1.2,2.1,""],
+["Jay Huff","C",0,12,4,2,.36,.62,.8,.7,.6,.7,2.2,.4,1.1,.5,1.4,""]]},
+BKN:{name:"Nets",city:"Brooklyn",r:-4.5,out:["Tyler Bilodeau (shoulder)","Mikel Brown Jr."],p:[
+["Egor Demin","PG",1,31,11,7,.36,.48,2.5,.85,5.5,.4,3,.8,.4,2.2,2.4,""],
+["Keon Ellis","SG",1,27,7,5,.38,.52,.8,.85,1.5,.5,2,1.6,.6,.9,2.4,""],
+["Michael Porter Jr.","SF",1,33,17,8,.39,.56,4,.85,2.5,1.6,5.8,1,.5,1.8,2.6,""],
+["Julius Randle","PF",1,34,16,4.5,.33,.52,6,.8,5,1.4,5.4,.7,.3,2.6,2.5,""],
+["Day'Ron Sharpe","C",1,25,7,1,.3,.58,2,.65,1.8,3,4.5,.8,.7,1.4,3,""],
+["Chaney Johnson","G-F",0,26,9,3.5,.34,.48,1.5,.72,2,1.1,2.5,.9,.3,.9,2,""],
+["Nolan Traore","G",0,24,7,2.5,.31,.47,2,.78,3.4,.3,1.4,.6,.1,1.6,1.8,""]]},
+LAC:{name:"Clippers",city:"LA",r:-3,out:["Bradley Beal (knee)","Brandon Ingram (Achilles)","Max Strus (foot)","Jordan Miller (shoulder)","Yanic Konan Niederhauser (foot)"],p:[
+["Darius Garland","PG",1,33,16,6.5,.38,.50,3.5,.86,6.5,.4,2.4,1,.1,3,2,""],
+["Kris Dunn","SG",1,26,6,3,.34,.5,1,.7,3.5,.6,2.8,1.5,.4,1.2,2.6,""],
+["Rui Hachimura","SF",1,30,12,4,.40,.55,2.5,.78,1.3,.9,4,.7,.3,1,1.7,""],
+["Derrick Jones Jr.","PF",1,28,9,4,.35,.62,2.2,.7,1.2,1,2.6,.8,.8,.7,2.4,""],
+["Isaiah Jackson","C",1,22,6,0,.2,.64,2.4,.65,1,2,4,.8,1.2,.9,2.8,""],
+["Brook Lopez","C",0,22,8,5,.36,.58,1.3,.8,1,.8,3,.5,1.6,.7,2.2,""],
+["Keaton Wagler","G",0,22,9,4,.34,.48,3,.8,2.8,.4,2,.8,.2,1.6,1.8,""],
+["Kobe Sanders","G",0,19,6,2.5,.35,.5,1,.78,3,.3,1.8,.6,.2,1.2,1.6,""],
+["Gradey Dick","G-F",0,18,7,4.5,.36,.55,1,.85,1,.3,1.8,.5,.2,.6,1.4,""]]},
+OKC:{name:"Thunder",city:"Oklahoma City",r:8,out:["Thomas Sorber (knee)","Nikola Topic (back)","Otega Oweh (Achilles)"],p:[
+["Shai Gilgeous-Alexander","PG",1,34,20,5.5,.37,.58,8.5,.89,6.5,.6,4.5,1.6,1,2.3,2.2,""],
+["Cason Wallace","SG",1,28,8,4,.37,.55,1.2,.8,2.5,.5,2.8,1.7,.5,1,2.2,""],
+["Jalen Williams","SF",1,32,16,4.5,.36,.55,4.5,.82,5,.8,4.5,1.4,.6,2.2,2.4,""],
+["Chet Holmgren","PF",1,30,12,4.5,.36,.63,4.5,.79,2,1.6,6.5,.8,2.2,1.5,2.3,""],
+["Isaiah Hartenstein","C",1,24,7,0,.2,.62,1.5,.68,3.5,3,6,.8,.9,1.4,2.8,""],
+["Ajay Mitchell","G",0,22,9,3,.35,.52,3,.85,3,.3,1.8,.8,.2,1.2,1.6,""],
+["Alex Caruso","G",0,20,5,3,.35,.52,1,.8,2,.5,2.2,1.5,.4,.8,2.2,""],
+["Jaylin Williams","F-C",0,16,5,3.5,.38,.52,1,.7,1.5,1,3.4,.5,.4,.7,2,""],
+["Aaron Wiggins","G-F",0,14,7,3,.36,.55,1,.8,1.2,.7,2,.5,.2,.5,1.4,""]]},
+ORL:{name:"Magic",city:"Orlando",r:-0.5,out:["Paolo Banchero (ankle)","Jonathan Isaac (knee)","Noah Penda (hamstring)","Izaiyah Nelson (ankle)"],p:[
+["Jalen Suggs","PG",1,30,12,5.5,.34,.52,3,.8,4.5,.8,3.2,1.6,.6,2,2.8,""],
+["Desmond Bane","SG",1,33,15,6,.38,.53,3,.88,4,.5,3.6,1.1,.3,2,2.5,""],
+["Franz Wagner","SF",1,34,17,5,.33,.55,5.5,.83,4.5,.9,4.8,1,.4,2,2,""],
+["Tristan da Silva","PF",1,26,8,4.5,.34,.52,1.2,.82,1.8,.6,3,.7,.3,.8,2.2,""],
+["Wendell Carter Jr.","C",1,28,9,2.5,.36,.6,2.5,.73,1.8,2.4,6,.6,.8,1.2,2.6,""],
+["Anthony Black","G",0,24,9,3.5,.34,.52,2.5,.7,3.5,.6,2.6,1,.5,1.6,2.4,"Q"],
+["Nikola Vucevic","C",0,20,9,3,.35,.55,1.5,.8,2,1.2,5,.6,.5,1.2,1.6,""],
+["Jase Richardson","G",0,18,7,3,.35,.5,1.6,.8,2,.3,1.5,.5,.1,.9,1.4,""],
+["Goga Bitadze","C",0,14,3.5,0,.2,.62,1.2,.7,1.4,1.3,3,.4,.9,.7,2,""],
+["Jevon Carter","G",0,12,4,2.5,.35,.45,.4,.8,1.4,.2,1,.6,.1,.5,1.2,""]]},
+NYK:{name:"Knicks",city:"New York",r:3,out:[],p:[
+["Jalen Brunson","PG",1,35,20,6,.38,.52,7,.82,7,.5,2.8,.9,.1,2.6,2,""],
+["Mikal Bridges","SG",1,35,14,5.5,.38,.55,2,.78,3.5,.7,3,1.3,.5,1.5,1.7,""],
+["Josh Hart","SF",1,32,9,3,.35,.58,2.5,.75,5,2,6.5,1.4,.3,1.6,2.6,""],
+["OG Anunoby","PF",1,34,13,6,.37,.56,3.5,.78,2,1.2,4,1.5,.8,1.2,2.2,""],
+["Karl-Anthony Towns","C",1,33,15,5,.40,.58,5,.84,3,2.8,9,.8,.6,2.4,3.2,""],
+["Miles McBride","G",0,22,8,5,.39,.5,1.2,.85,2.2,.4,1.6,.8,.2,.7,1.6,""],
+["Jordan Clarkson","G",0,16,9,4,.34,.48,1.8,.84,1.8,.3,1.6,.5,.1,1.2,1.4,""],
+["Landry Shamet","G",0,15,5.5,4,.38,.5,.8,.9,1,.2,1.2,.5,.1,.5,1.6,""],
+["Andre Drummond","C",0,14,4,0,.2,.55,1.8,.55,.8,2.5,4,1,.5,1,2,""],
+["Jose Alvarado","G",0,14,5,3,.34,.5,.6,.75,2.5,.3,1.2,1.1,.1,.9,1.8,"Q"]]},
+TOR:{name:"Raptors",city:"Toronto",r:3,out:["Nate Bittle (foot)"],p:[
+["Immanuel Quickley","PG",1,32,14,7,.37,.52,3,.86,5.5,.5,3.2,.9,.2,1.6,1.8,""],
+["RJ Barrett","SG",1,33,15,4.5,.35,.55,5,.7,3.5,1,4.2,.7,.3,2.1,2.2,""],
+["Kawhi Leonard","SF",1,32,17,5,.38,.55,4,.87,3.5,1.1,5.2,1.6,.5,1.8,1.6,""],
+["Scottie Barnes","PF",1,35,15,3.5,.3,.56,4,.78,5.5,2,6,1.4,1.2,2.6,2.6,""],
+["Jakob Poeltl","C",1,27,8,0,.2,.65,2,.55,2.8,3,6,.8,1.3,1.4,2.8,""],
+["Jamal Shead","G",0,22,6,3.5,.34,.48,1.4,.75,4.5,.3,1.5,1,.2,1.4,2.5,""],
+["Ja'Kobe Walter","G",0,20,7,4.5,.34,.5,1.2,.8,1.2,.5,2,.9,.2,.7,2,""],
+["Collin Murray-Boyles","F",0,20,6,.5,.3,.55,2,.65,1.5,1.6,3,1.1,.6,1,2.6,""],
+["Jamison Battle","F",0,12,4,3,.38,.5,.5,.82,.5,.3,1.4,.3,.1,.3,1.2,""]]},
+MIN:{name:"Timberwolves",city:"Minnesota",r:1.5,out:["Donte DiVincenzo (Achilles)"],p:[
+["LaMelo Ball","PG",1,32,18,9,.35,.5,4,.85,7.5,1,4.5,1.4,.3,3.2,2.6,""],
+["Anthony Edwards","SG",1,35,21,8,.38,.54,6,.82,4.5,.7,5,1.2,.6,3,1.8,""],
+["Jonathan Kuminga","SF",1,28,12,3.5,.33,.55,4.5,.68,2.2,1.3,4,.8,.5,1.8,2.2,""],
+["Jaden McDaniels","PF",1,31,10,3.5,.38,.56,2,.8,2,1.2,3.5,1.1,1,1.4,2.8,""],
+["Rudy Gobert","C",1,31,7,0,.2,.68,4,.65,1.8,3.4,7.6,.8,1.5,1.4,2.6,""],
+["Terrence Shannon Jr.","G-F",0,20,8,4,.36,.55,3,.8,1.4,.4,2,.6,.2,.8,1.6,""],
+["Trey Lyles","F",0,16,6,4,.38,.5,1.5,.78,1.2,1,3,.5,.3,.5,1.6,""],
+["Joan Beringer","C",0,16,5,0,.2,.62,1.6,.6,.6,2.2,2.4,.4,1.2,.7,2,""],
+["Bones Hyland","G",0,12,7,4.5,.37,.48,1.2,.85,2.2,.3,1,.6,.1,1,1.4,""],
+["Jaylen Clark","G",0,10,2.5,1.2,.33,.5,.5,.75,.6,.5,1,.8,.1,.3,1.2,""]]},
+DET:{name:"Pistons",city:"Detroit",r:2.5,out:["Jalen Duren (hamstring)"],p:[
+["Cade Cunningham","PG",1,35,20,6,.36,.52,6.5,.84,9,.8,5.2,1.1,.8,3.6,2.4,""],
+["Duncan Robinson","SG",1,28,9,7,.40,.55,1,.88,1.8,.2,2.2,.6,.2,.8,1.6,""],
+["Ausar Thompson","SF",1,28,9,.8,.28,.56,2,.62,3,1.6,4,1.6,1,1.6,2.6,"Q"],
+["John Collins","PF",1,30,12,4,.40,.6,3,.8,1.4,1.8,5.2,.7,.8,1.1,2.2,""],
+["Paul Reed","C",1,20,5,.5,.3,.6,1.6,.7,1.2,2,3.4,.9,.9,.8,3,""],
+["Daniss Jenkins","G",0,22,8,3,.35,.55,2.2,.82,4,.4,2.4,.8,.2,1.6,1.8,""],
+["Kevin Huerter","G-F",0,22,8,5,.35,.5,.8,.8,2.2,.3,3,.6,.3,.9,2.6,""],
+["Ronald Holland II","F",0,22,7,1.5,.3,.55,2.4,.8,1.6,1.2,2.8,1.1,.4,1,2,""],
+["Isaiah Joe","G",0,20,7,5,.39,.55,1.2,.85,1,.3,2,.7,.1,.5,1.2,""],
+["Javonte Green","G-F",0,13,4,2,.35,.58,.6,.7,.5,.9,1.6,.8,.4,.4,1.6,""]]},
+PHI:{name:"76ers",city:"Philadelphia",r:2,out:["LeBron James (back)","Dominick Barlow (back)","Tacko Fall (quad)","Ariel Hukporti (Achilles)"],p:[
+["Tyrese Maxey","PG",1,37,21,8,.37,.52,6,.87,6,.5,3.4,1.6,.5,2.2,2,""],
+["VJ Edgecombe","SG",1,33,13,6,.38,.5,3,.8,3.5,1.2,4.8,1.4,.6,2,2.4,""],
+["Kentavious Caldwell-Pope","G",1,27,7.5,5,.39,.55,.8,.85,1.8,.4,2.2,1.2,.4,.7,2,""],
+["Jaylen Brown","SF",1,33,18,5.5,.35,.56,5.5,.78,3.5,1,4.8,1.1,.4,2.6,2.4,""],
+["Adem Bona","C",1,22,6,.3,.2,.64,2.4,.68,.8,2,4,.7,1.6,.8,3.2,""],
+["Joel Embiid","C",0,30,18,3,.32,.52,10,.86,5,1.5,7,.8,1,3.4,3,"D"],
+["Anfernee Simons","G",0,26,14,7.5,.38,.5,2.5,.88,3.5,.3,2,.6,.1,1.8,1.4,""],
+["Dean Wade","F",0,18,4,3,.37,.5,.6,.7,1.2,.7,3,.7,.4,.5,1.8,"Q"],
+["Jabari Walker","F",0,14,5,2,.34,.55,1.5,.75,.8,1.2,2.6,.5,.3,.5,1.8,"Q"],
+["Labaron Philon Jr.","G",0,12,5,2,.33,.45,1,.75,1.8,.3,1,.5,.1,.8,1.2,""]]},
+MEM:{name:"Grizzlies",city:"Memphis",r:0.5,out:["Zach Edey","Richie Saunders"],p:[
+["Ty Jerome","PG",1,30,15,5.5,.40,.55,3,.88,5.5,.5,2.6,1.2,.2,2.2,2,""],
+["Cedric Coward","SG",1,26,9,4,.37,.55,2,.82,2,1,3.8,1,.5,1.2,2.2,"Q"],
+["Jaylen Wells","SF",1,28,9,5,.36,.52,1.8,.8,1.6,.8,2.6,.9,.3,.9,2.6,""],
+["Cameron Boozer","PF",1,32,14,4.5,.36,.56,5,.78,3.5,2,6.5,1,.6,2.4,2.4,""],
+["Isaiah Stewart","C",1,26,7,2.5,.37,.58,2,.72,1.4,2,4.4,.6,1.2,1,3.2,""],
+["Jerami Grant","F",0,26,12,6,.35,.52,3.5,.8,1.8,.8,3,.7,.7,1.2,2,""],
+["Cam Spencer","G",0,20,7,4.5,.40,.52,.8,.86,2.8,.4,2,.7,.1,1,1.6,""],
+["Quinten Post","C",0,16,6,4,.38,.55,.8,.8,1.2,.8,3.2,.4,.6,.8,2.2,""],
+["GG Jackson","F",0,14,7,3,.33,.48,1.5,.75,.8,.7,2.2,.5,.3,.8,1.4,""],
+["Kris Murray","F",0,12,3.5,2,.32,.5,.5,.7,.9,.8,1.6,.4,.3,.4,1.4,""]]},
+SAC:{name:"Kings",city:"Sacramento",r:-4,out:["Ben Simmons (Achilles)","Dylan Cardwell (calf)","Maxime Raynaud (knee)"],p:[
+["Darius Acuff","PG",1,30,13,5.5,.35,.48,3,.82,5,.4,2.4,.8,.1,2.4,2.2,""],
+["Zach LaVine","SG",1,33,17,7,.38,.55,4,.86,3.8,.4,3.6,.8,.3,2.4,2,""],
+["De'Andre Hunter","SF",1,28,10,4.5,.37,.52,2.5,.82,1.4,.8,3.4,.6,.2,1,2,""],
+["Keegan Murray","PF",1,30,11,5.5,.35,.58,2,.82,1.6,1.2,5,1,.7,1,2,"Q"],
+["Domantas Sabonis","C",1,34,13,1.5,.35,.62,5,.76,6.5,3.6,9.5,.9,.4,3,3.2,""],
+["Malik Monk","G",0,24,12,5.5,.35,.52,3,.86,4,.3,2.2,.6,.3,1.8,1.6,""],
+["Precious Achiuwa","F",0,20,7,1,.3,.58,1.6,.62,1,2,3.8,.8,.6,.9,2.2,""],
+["Emanuel Sharp","G",0,16,6,3.5,.36,.5,.8,.8,1.2,.2,1.4,.6,.1,.6,1.6,""],
+["Daeqwon Plowden","G-F",0,14,4,2.5,.35,.5,.6,.7,.8,.5,1.6,.6,.3,.4,1.6,""],
+["Nique Clifford","G",0,14,5,2,.34,.5,1,.78,1.4,.6,2,.5,.2,.7,1.4,""]]}
+};
+var NBA_GAMES = [
+{away:"LAL",home:"UTA",time:"2026-10-25T21:00:00Z",wp:[68.4,31.6]},
+{away:"IND",home:"BKN",time:"2026-10-25T22:00:00Z",wp:[69.8,30.2]},
+{away:"LAC",home:"OKC",time:"2026-10-25T23:00:00Z",wp:[9.2,90.8]},
+{away:"ORL",home:"NYK",time:"2026-10-25T23:00:00Z",wp:[28,72]},
+{away:"TOR",home:"MIN",time:"2026-10-25T23:00:00Z",wp:[50,50]},
+{away:"DET",home:"PHI",time:"2026-10-25T23:30:00Z",wp:[47.8,52.2]},
+{away:"MEM",home:"SAC",time:"2026-10-26T01:00:00Z",wp:[59.3,40.7]}
+];
+
+// NFL. qb: [name, cmp%, yds/att, int%, sack%, rushAtt/g, ypc, status]
+// rb:  [name, carryShare, ypc, targetShare, status]
+// rec: [name, pos, targetShare, catchRate, yds/rec, status]
+var NFL_TEAMS = {
+PIT:{name:"Steelers",m:1.11,imp:23.3,k:["Chris Boswell",.9],out:["Ben Skowronek WR","Roman Wilson WR (IR)"],
+ qb:[["Aaron Rodgers",.66,6.4,.018,.07,1.2,2.5,""]],
+ rb:[["Jaylen Warren",.55,4.4,.10,""],["Rico Dowdle",.42,4.3,.05,""]],
+ rec:[["DK Metcalf","WR",.24,.62,14.5,""],["Germie Bernard","WR",.15,.68,11,""],["Kaden Wetjen","WR",.08,.66,10,""],["Pat Freiermuth","TE",.14,.74,9.5,""],["Darnell Washington","TE",.10,.74,8.5,""],["Brandon Johnson","WR",.06,.6,12,""]]},
+NO:{name:"Saints",m:1.072,imp:20.3,k:["Daniel Carlson",.86],out:["Jordyn Tyson WR (hamstring)"],
+ qb:[["Tyler Shough",.63,6.6,.024,.065,3.2,5.0,""]],
+ rb:[["Alvin Kamara",.5,4.2,.13,""],["Kendre Miller",.38,4.4,.04,""]],
+ rec:[["Chris Olave","WR",.25,.64,12.5,""],["Devaughn Vele","WR",.14,.66,11,""],["Bryce Lance","WR",.11,.6,13,""],["Juwan Johnson","TE",.15,.72,10,""],["Noah Fant","TE",.08,.7,9,""],["Cedric Tillman","WR",.06,.58,13,""]]},
+IND:{name:"Colts",m:1.009,imp:17.5,k:["Spencer Shrader",.86],out:["Tyler Warren TE (groin)","Alec Pierce WR (heel)"],
+ qb:[["Daniel Jones",.64,6.6,.025,.075,4.0,4.6,""]],
+ rb:[["Jonathan Taylor",.68,4.8,.09,""],["DJ Giddens",.2,4.2,.03,""]],
+ rec:[["Josh Downs","WR",.22,.72,10.5,""],["Keenan Allen","WR",.2,.66,10.5,""],["Laquon Treadwell","WR",.1,.6,12,""],["Will Mallory","TE",.1,.68,10,""],["Mo Alie-Cox","TE",.07,.68,9,""],["Ashton Dulin","WR",.06,.58,14,""],["Anthony Gould","WR",.05,.6,12,"Q"]]},
+MIN:{name:"Vikings",m:1.003,imp:24.0,k:["Will Reichard",.9],out:[],
+ qb:[["Kyler Murray",.66,7.2,.022,.07,5.0,5.8,""]],
+ rb:[["Aaron Jones Sr.",.5,4.6,.10,""],["Jordan Mason",.38,4.5,.03,"Q"]],
+ rec:[["Justin Jefferson","WR",.27,.67,14.5,""],["Jordan Addison","WR",.17,.64,13,""],["Jauan Jennings","WR",.13,.65,11.5,""],["T.J. Hockenson","TE",.17,.72,9.5,""],["Tai Felton","WR",.04,.58,13,""]]},
+MIA:{name:"Dolphins",m:0.991,imp:17.5,k:["Zane Gonzalez",.85],out:[],
+ qb:[["Malik Willis",.65,6.8,.02,.09,6.0,5.8,""]],
+ rb:[["Ollie Gordon II",.52,4.2,.06,""],["Jaylen Wright",.35,4.8,.05,""]],
+ rec:[["Malik Washington","WR",.2,.68,10,""],["Caleb Douglas","WR",.17,.6,13.5,""],["Chris Bell","WR",.15,.6,13,""],["Greg Dulcich","TE",.15,.68,11,""],["Jalen Tolbert","WR",.07,.58,12,""],["Will Kacmarek","TE",.04,.7,7,""]]},
+NYJ:{name:"Jets",m:1.028,imp:22.0,k:["Jason Sanders",.88],out:[],
+ qb:[["Geno Smith",.67,7.0,.022,.07,2.0,4.0,""]],
+ rb:[["Breece Hall",.5,4.6,.11,"D"],["Braelon Allen",.4,4.2,.04,""],["Isaiah Davis",.15,4.2,.02,""]],
+ rec:[["Garrett Wilson","WR",.27,.64,12.5,""],["Adonai Mitchell","WR",.14,.6,14,""],["Omar Cooper Jr.","WR",.14,.62,13,""],["Mason Taylor","TE",.15,.72,9,""],["Tim Patrick","WR",.06,.6,11,""]]},
+CIN:{name:"Bengals",m:1.09,imp:24.5,k:["Evan McPherson",.86],out:["Tanner Hudson TE (IR)","Andrei Iosivas WR (IR)"],
+ qb:[["Joe Burrow",.68,7.1,.018,.065,1.8,3.5,""]],
+ rb:[["Chase Brown",.62,4.5,.1,""],["Samaje Perine",.3,4.0,.05,""]],
+ rec:[["Ja'Marr Chase","WR",.28,.68,12.8,""],["Tee Higgins","WR",.21,.64,13.5,""],["Mike Gesicki","TE",.1,.7,10,""],["Drew Sample","TE",.07,.74,7.5,""],["Dohnte Meyers","WR",.07,.6,11,""],["Colbie Young","WR",.05,.58,12,"Q"]]},
+BAL:{name:"Ravens",m:1.103,imp:22.0,k:["Tyler Loop",.88],out:["Lamar Jackson QB (out)"],
+ qb:[["Tyler Huntley",.63,6.2,.025,.08,5.0,5.0,""]],
+ rb:[["Derrick Henry",.64,4.7,.05,""],["Justice Hill",.24,4.6,.1,""]],
+ rec:[["Zay Flowers","WR",.25,.66,12,""],["Mark Andrews","TE",.17,.68,10.5,""],["Rashod Bateman","WR",.13,.6,13,"Q"],["Devontez Walker","WR",.1,.55,15,""],["Matt Hibner","TE",.05,.7,8,"Q"],["Elijah Sarratt","WR",.06,.6,11,""]]},
+CLE:{name:"Browns",m:1.073,imp:19.3,k:["Andre Szmyt",.85],out:["Dillon Gabriel QB (back)"],
+ qb:[["Deshaun Watson",.62,6.4,.022,.09,4.0,5.0,""]],
+ rb:[["Quinshon Judkins",.6,4.3,.07,""],["Dylan Sampson",.3,4.4,.07,""]],
+ rec:[["Jerry Jeudy","WR",.2,.6,13,""],["Denzel Boston","WR",.17,.62,12.5,""],["KC Concepcion Jr.","WR",.15,.68,10.5,""],["Harold Fannin Jr.","TE",.18,.72,9.5,""],["Malachi Corley","WR",.05,.65,8,""]]},
+TEN:{name:"Titans",m:1.029,imp:17.8,k:["Joey Slye",.84],out:[],
+ qb:[["Cam Ward",.62,6.5,.024,.085,3.0,4.5,""]],
+ rb:[["Tony Pollard",.6,4.3,.08,""],["Tyjae Spears",.28,4.5,.08,"Q"]],
+ rec:[["Carnell Tate","WR",.2,.62,13,""],["Wan'Dale Robinson","WR",.2,.7,9.5,""],["Elic Ayomanor","WR",.13,.6,13,""],["Calvin Ridley","WR",.1,.58,14,"Q"],["Gunnar Helm","TE",.13,.72,9,""],["Chimere Dike","WR",.04,.62,11,""]]},
+TB:{name:"Buccaneers",m:1.087,imp:20.75,k:["Chase McLaughlin",.88],out:["David Sills V WR (IR)"],
+ qb:[["Baker Mayfield",.66,7.0,.022,.065,2.5,4.5,"Q"],["Jalon Daniels",.58,6.0,.03,.1,6.0,5.5,""]],
+ rb:[["Bucky Irving",.58,4.6,.11,""],["Kenny Gainwell",.3,4.3,.07,""],["Sean Tucker",.1,4.5,.01,"Q"]],
+ rec:[["Emeka Egbuka","WR",.22,.65,13,""],["Chris Godwin Jr.","WR",.18,.7,11,""],["Ted Hurst III","WR",.12,.6,13,""],["Cade Otton","TE",.14,.74,8.5,""],["Tez Johnson","WR",.05,.65,10,""],["Payne Durham","TE",.04,.7,8,""]]},
+CAR:{name:"Panthers",m:1.121,imp:23.75,k:["Ryan Fitzgerald",.86],out:["Jonathon Brooks RB (IR)","Xavier Legette WR (IR)"],
+ qb:[["Bryce Young",.64,6.6,.022,.07,3.0,4.5,""]],
+ rb:[["Chuba Hubbard",.55,4.3,.08,""],["Trevor Etienne",.3,4.6,.05,""],["AJ Dillon",.13,3.9,.01,"Q"]],
+ rec:[["Tetairoa McMillan","WR",.25,.62,13.5,""],["Jalen Coker","WR",.16,.64,12,""],["Tommy Tremble","TE",.12,.72,9.5,""],["Brycen Tremayne","WR",.09,.58,13,""],["John Metchie III","WR",.07,.66,10,""],["Darren Waller","TE",.08,.68,10,""]]},
+SF:{name:"49ers",m:1.152,imp:26.0,k:["Eddy Pineiro",.88],out:["Deebo Samuel WR (out)"],
+ qb:[["Brock Purdy",.68,7.8,.022,.07,2.5,4.5,""]],
+ rb:[["Christian McCaffrey",.66,4.5,.18,""],["Kaelon Black",.25,4.3,.03,""]],
+ rec:[["Mike Evans","WR",.2,.6,14.5,"Q"],["George Kittle","TE",.2,.74,11.5,""],["Christian Kirk","WR",.13,.68,11,""],["Brandin Cooks","WR",.1,.62,13,""],["Jacob Cowing","WR",.07,.65,11,""],["Luke Farrell","TE",.03,.75,7,""]]},
+ATL:{name:"Falcons",m:1.122,imp:23.5,k:["Nick Folk",.88],out:["Brian Robinson Jr. RB (out)"],
+ qb:[["Michael Penix Jr.",.63,7.2,.022,.06,1.5,3.0,""]],
+ rb:[["Bijan Robinson",.72,5.0,.15,""],["Khalil Herbert",.2,4.3,.02,""]],
+ rec:[["Drake London","WR",.26,.65,13,""],["Kyle Pitts Sr.","TE",.17,.68,11.5,""],["Jahan Dotson","WR",.13,.62,12,""],["Olamide Zaccheaus","WR",.07,.68,9.5,"Q"],["Zachariah Branch","WR",.08,.68,10,""],["Charlie Woerner","TE",.03,.7,7,""]]},
+NYG:{name:"Giants",m:0.999,imp:16.5,k:["Dominic Zvada",.85],out:[],
+ qb:[["J.J. McCarthy",.62,6.8,.028,.075,3.0,4.5,""]],
+ rb:[["Cam Skattebo",.55,4.3,.08,""],["Tyrone Tracy Jr.",.35,4.4,.07,""]],
+ rec:[["Malik Nabers","WR",.28,.62,13,""],["Isaiah Likely","TE",.14,.68,11,""],["Darnell Mooney","WR",.11,.58,14,"Q"],["Malachi Fields","WR",.11,.6,12.5,""],["Theo Johnson","TE",.08,.7,9,"Q"],["Jalin Hyatt","WR",.05,.55,15,""]]},
+HOU:{name:"Texans",m:1.063,imp:26.0,k:["Ka'imi Fairbairn",.9],out:[],
+ qb:[["C.J. Stroud",.66,7.4,.02,.07,2.5,4.5,""]],
+ rb:[["David Montgomery",.52,4.4,.07,"Q"],["Woody Marks",.4,4.3,.08,""]],
+ rec:[["Nico Collins","WR",.25,.66,14.5,""],["Marvin Harrison Jr.","WR",.2,.6,13.5,""],["Tank Dell","WR",.1,.62,12.5,"Q"],["Dalton Schultz","TE",.12,.74,9,""],["Jaylin Noel","WR",.08,.64,11,""],["Xavier Hutchinson","WR",.04,.6,11,""]]},
+DEN:{name:"Broncos",m:1.065,imp:24.0,k:["Wil Lutz",.88],out:["Pat Bryant WR (IR)","Jonah Coleman RB (IR)"],
+ qb:[["Bo Nix",.65,6.6,.02,.05,4.0,5.2,""]],
+ rb:[["J.K. Dobbins",.52,4.6,.06,""],["RJ Harvey",.38,4.5,.09,""],["Tyler Badie",.08,4.5,.02,"Q"]],
+ rec:[["Courtland Sutton","WR",.22,.6,14,""],["Jaylen Waddle","WR",.2,.68,13,""],["Evan Engram","TE",.13,.72,9.5,""],["Troy Franklin","WR",.11,.6,12,""],["Marvin Mims Jr.","WR",.07,.62,13,""]]},
+ARI:{name:"Cardinals",m:1.016,imp:19.5,k:["Chad Ryland",.84],out:["James Conner RB (IR)","Trey Benson RB (IR)"],
+ qb:[["Jacoby Brissett",.66,6.5,.02,.08,2.0,3.5,""]],
+ rb:[["Jeremiyah Love",.58,4.7,.08,"Q"],["Tyler Allgeier",.4,4.2,.03,""]],
+ rec:[["Trey McBride","TE",.27,.74,10.5,""],["Michael Wilson","WR",.18,.62,12.5,""],["Kendrick Bourne","WR",.12,.66,11.5,""],["Jalen Brooks","WR",.1,.6,12,""],["Elijah Higgins","TE",.06,.7,8,""],["Simi Fehoko","WR",.04,.55,14,""]]},
+LA:{name:"Rams",m:1.102,imp:26.0,k:["Brandon McManus",.86],out:["Davante Adams WR (out)"],
+ qb:[["Matthew Stafford",.67,7.8,.018,.05,1.0,1.5,""]],
+ rb:[["Kyren Williams",.68,4.4,.09,""],["Blake Corum",.27,4.6,.02,""]],
+ rec:[["Puka Nacua","WR",.32,.72,12.5,""],["Tyler Higbee","TE",.12,.72,9,""],["Jordan Whittington","WR",.12,.64,12,""],["Konata Mumpfield","WR",.1,.66,11,""],["Colby Parkinson","TE",.07,.7,9,""],["Tutu Atwell","WR",.05,.55,16,""]]},
+LV:{name:"Raiders",m:1.057,imp:21.5,k:["Matt Gay",.86],out:["Dont'e Thornton Jr. WR (IR)","Jack Bech WR (IR)","Carter Runyon TE (IR)"],
+ qb:[["Kirk Cousins",.66,6.8,.024,.075,1.0,1.5,""]],
+ rb:[["Ashton Jeanty",.68,4.6,.1,""],["Mike Washington Jr.",.25,4.4,.03,""]],
+ rec:[["Brock Bowers","TE",.27,.72,11.5,""],["Jalen Nailor","WR",.16,.6,13.5,""],["Tre Tucker","WR",.15,.62,12.5,""],["Cody White","WR",.09,.6,11.5,""],["Michael Mayer","TE",.08,.7,9,""],["Malik Benson","WR",.04,.55,14,""]]},
+GB:{name:"Packers",m:1.127,imp:25.5,k:["Trey Smack",.85],out:["Skyy Moore WR (IR)","Luke Musgrave TE (PUP)"],
+ qb:[["Jordan Love",.66,7.6,.022,.06,2.5,4.5,""]],
+ rb:[["Josh Jacobs",.68,4.3,.09,""],["Pierre Strong Jr.",.2,4.6,.03,""]],
+ rec:[["Tucker Kraft","TE",.2,.72,11.5,""],["Christian Watson","WR",.17,.58,16,""],["Matthew Golden","WR",.17,.64,13,""],["Savion Williams","WR",.1,.64,11,""],["Bo Melton","WR",.05,.6,13,"Q"],["J. Michael Sturdivant","WR",.04,.55,13,""]]},
+DET:{name:"Lions",m:1.106,imp:29.0,k:["Jake Bates",.86],out:["Isiah Pacheco RB (IR)","Tom Kennedy WR (IR)","Kendrick Law WR (IR)"],
+ qb:[["Jared Goff",.69,7.6,.02,.055,1.0,1.5,""]],
+ rb:[["Jahmyr Gibbs",.6,5.4,.13,""],["Sione Vaki",.25,4.2,.03,""]],
+ rec:[["Amon-Ra St. Brown","WR",.27,.73,11.5,""],["Jameson Williams","WR",.17,.6,16,""],["Sam LaPorta","TE",.15,.74,10.5,""],["Isaac TeSlaa","WR",.1,.62,13,""],["Brock Wright","TE",.04,.75,8,""]]},
+KC:{name:"Chiefs",m:1.033,imp:19.75,k:["Harrison Butker",.88],out:["Tyquan Thornton WR (IR)"],
+ qb:[["Patrick Mahomes",.65,6.8,.02,.06,4.0,5.5,""]],
+ rb:[["Kenneth Walker",.6,4.4,.07,""],["Emmett Johnson",.3,4.3,.06,""]],
+ rec:[["Rashee Rice","WR",.23,.68,11,"Q"],["Travis Kelce","TE",.18,.72,9.5,""],["Xavier Worthy","WR",.16,.6,13,""],["Jalen Royals","WR",.1,.62,12,""],["Noah Gray","TE",.06,.72,8.5,""],["Nikko Remigio","WR",.04,.62,10,""]]},
+SEA:{name:"Seahawks",m:1.037,imp:22.75,k:["Jason Myers",.86],out:["Elijah Arroyo TE (out)","Zach Charbonnet RB (PUP)"],
+ qb:[["Sam Darnold",.66,7.6,.024,.065,2.5,4.0,""]],
+ rb:[["Emanuel Wilson",.62,4.4,.07,""],["George Holani",.32,4.2,.05,""]],
+ rec:[["Jaxon Smith-Njigba","WR",.3,.7,14,""],["Cooper Kupp","WR",.16,.68,10.5,""],["Rashid Shaheed","WR",.12,.58,15,""],["AJ Barner","TE",.12,.74,9,""],["Tory Horton","WR",.05,.6,13,""],["Eric Saubert","TE",.03,.72,7,""]]}
+};
+var NFL_GAMES = [
+{away:"PIT",home:"NO",time:"2026-10-25T13:30:00Z",note:"London",spread:"PIT -3",total:43.5},
+{away:"IND",home:"MIN",time:"2026-10-25T17:00:00Z",spread:"MIN -6.5",total:41.5},
+{away:"MIA",home:"NYJ",time:"2026-10-25T17:00:00Z",spread:"NYJ -4.5",total:39.5},
+{away:"CIN",home:"BAL",time:"2026-10-25T17:00:00Z",spread:"CIN -2.5",total:46.5},
+{away:"CLE",home:"TEN",time:"2026-10-25T17:00:00Z",spread:"CLE -1.5",total:37},
+{away:"TB",home:"CAR",time:"2026-10-25T17:00:00Z",spread:"CAR -3",total:44.5},
+{away:"SF",home:"ATL",time:"2026-10-25T17:00:00Z",spread:"SF -2.5",total:49.5},
+{away:"NYG",home:"HOU",time:"2026-10-25T17:00:00Z",spread:"HOU -9.5",total:42.5},
+{away:"DEN",home:"ARI",time:"2026-10-25T20:05:00Z",spread:"DEN -4.5",total:43.5},
+{away:"LA",home:"LV",time:"2026-10-25T20:25:00Z",spread:"LA -4.5",total:47.5},
+{away:"GB",home:"DET",time:"2026-10-25T20:25:00Z",spread:"DET -3.5",total:54.5},
+{away:"KC",home:"SEA",time:"2026-10-26T00:20:00Z",note:"Sunday Night",spread:"SEA -3",total:42.5}
+];
+if (typeof module!=="undefined") module.exports={NBA_TEAMS,NBA_GAMES,NFL_TEAMS,NFL_GAMES};
+
+// ---------- shared ----------
+var R = Math.random;
+function pickW(list, wf){ var t=0,i,w=[]; for(i=0;i<list.length;i++){w[i]=Math.max(0,wf(list[i]));t+=w[i];} if(t<=0) return list[Math.floor(R()*list.length)]; var x=R()*t; for(i=0;i<list.length;i++){x-=w[i]; if(x<=0) return list[i];} return list[list.length-1]; }
+function norm(){ var u=1-R(),v=R(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+var PLAY_CHANCE = {"":1,P:.95,Q:.7,D:.25};
+function rollStatus(s){ return R() < (PLAY_CHANCE[s]==null?1:PLAY_CHANCE[s]); }
+
+// ---------- NBA ----------
+function nbaPrep(code){
+  var T=NBA_TEAMS[code], act=[], sat=[];
+  T.p.forEach(function(r){
+    var p={name:r[0],pos:r[1],st:r[2],tmin:r[3],status:r[17]};
+    var m=r[3]; p.fga=r[4]/m; p.f3a=r[5]/m; p.p3=r[6]; p.p2=r[7]; p.fta=r[8]/m; p.ftp=r[9];
+    p.ast=r[10]/m; p.orb=r[11]/m; p.drb=r[12]/m; p.stl=r[13]/m; p.blk=r[14]/m; p.tov=r[15]/m; p.pf=r[16]/m;
+    p.r3 = r[4]>0 ? r[5]/r[4] : 0;
+    p.use = p.fga + .44*p.fta + p.tov;
+    p.s={min:0,pts:0,fgm:0,fga:0,tpm:0,tpa:0,ftm:0,fta:0,oreb:0,dreb:0,ast:0,stl:0,blk:0,tov:0,pf:0,pm:0};
+    if (rollStatus(p.status)) act.push(p); else sat.push(p);
+  });
+  // starters: flagged starters who are active; promote big-minute bench players over low-minute starters
+  var starters=act.filter(function(p){return p.st;});
+  var bench=act.filter(function(p){return !p.st;}).sort(function(a,b){return b.tmin-a.tmin;});
+  while(starters.length<5 && bench.length) starters.push(bench.shift());
+  bench.forEach(function(b){
+    var low=starters.slice().sort(function(a,c){return a.tmin-c.tmin;})[0];
+    if(low && b.tmin-low.tmin>=8 && b.pos.indexOf("C")>=0===low.pos.indexOf("C")>=0){ starters[starters.indexOf(low)]=b; }
+  });
+  act.forEach(function(p){p.start=starters.indexOf(p)>=0;});
+  // scale minutes to 240
+  var sum=act.reduce(function(a,p){return a+p.tmin;},0), k=240/sum;
+  act.forEach(function(p){ p.tmin=Math.min(40, p.tmin*k); });
+  return {code:code, T:T, act:act, sat:sat, pts:0, q:[]};
+}
+function chooseLineup(team, t, closing){
+  var a=team.act.slice();
+  a.forEach(function(p){
+    p._k = closing ? p.tmin + R()*3
+      : (p.tmin*(t/48) - p.s.min) + p.tmin*.12 + (t===0||t===24 ? (p.start?100:0) : 0) + R()*1.2;
+  });
+  a.sort(function(x,y){return y._k-x._k;});
+  return a.slice(0,5);
+}
+function simNBA(g){
+  var A=nbaPrep(g.away), H=nbaPrep(g.home);
+  var pace=99+norm()*3.5, diff=(H.T.r - A.T.r);
+  A.adj = -diff*0.0027 - 0.006; H.adj = diff*0.0027 + 0.006;
+  A.tovm = 1 + diff*0.005; H.tovm = 1 - diff*0.005;
+  var on={};
+  function sum(list,f){var s=0;list.forEach(function(p){s+=p[f];});return s;}
+  function addPM(team,pts){ on[team.code].forEach(function(p){p.s.pm+=pts;}); var o=team===A?H:A; on[o.code].forEach(function(p){p.s.pm-=pts;}); }
+  function possession(off, def){
+    var O=on[off.code], D=on[def.code], tries=0;
+    while(tries++<5){
+      var sh=pickW(O,function(p){return p.use;});
+      var u=sh.use, x=R()*u;
+      if(x < sh.tov*off.tovm){
+        sh.s.tov++;
+        if(R()<.55){ pickW(D,function(p){return p.stl;}).s.stl++; }
+        return;
+      }
+      if(x < sh.tov*off.tovm + .44*sh.fta){
+        pickW(D,function(p){return p.pf;}).s.pf++;
+        var made=0, last=false;
+        for(var i=0;i<2;i++){ sh.s.fta++; last=R()<sh.ftp; if(last){sh.s.ftm++;made++;} }
+        sh.s.pts+=made; off.pts+=made; addPM(off,made);
+        if(last) return;
+        if(!rebound(off,def,O,D)) return; else continue;
+      }
+      var three = R()<sh.r3, pm = (three?sh.p3:sh.p2) + off.adj + norm()*.01;
+      sh.s.fga++; if(three) sh.s.tpa++;
+      if(R()<pm){
+        var pts=three?3:2; sh.s.fgm++; if(three) sh.s.tpm++;
+        if(R()<(three?.82:.55)){ var mates=O.filter(function(p){return p!==sh;}); pickW(mates,function(p){return p.ast;}).s.ast++; }
+        if(!three && R()<.06){ pickW(D,function(p){return p.pf;}).s.pf++; sh.s.fta++; if(R()<sh.ftp){sh.s.ftm++;pts++;} }
+        sh.s.pts+=pts; off.pts+=pts; addPM(off,pts); return;
+      }
+      var bp=(three?.035:.2)*(sum(D,"blk")/.104);
+      if(R()<Math.min(.4,bp)) pickW(D,function(p){return p.blk;}).s.blk++;
+      if(!rebound(off,def,O,D)) return;
+    }
+  }
+  function rebound(off,def,O,D){
+    var o=sum(O,"orb"), d=sum(D,"drb");
+    if(R()< o/(o+d)){ pickW(O,function(p){return p.orb;}).s.oreb++; return true; }
+    pickW(D,function(p){return p.drb;}).s.dreb++; return false;
+  }
+  function period(len, startT, isQ4orOT){
+    var poss=Math.round(pace*len/48 + norm()*1.5), stints=len>=12?3:1, per=poss/stints;
+    var a0=A.pts, h0=H.pts;
+    for(var s=0;s<stints;s++){
+      var t=startT + s*len/stints, closing = isQ4orOT && s===stints-1 && Math.abs(A.pts-H.pts)<15;
+      on[A.code]=chooseLineup(A,t,closing); on[H.code]=chooseLineup(H,t,closing);
+      var n=Math.round(per*(s+1))-Math.round(per*s);
+      for(var i=0;i<n;i++){ possession(A,H); possession(H,A);
+        if(R()<.1) pickW(on[H.code],function(p){return p.pf;}).s.pf++;
+        if(R()<.1) pickW(on[A.code],function(p){return p.pf;}).s.pf++; }
+      var dur=len/stints;
+      on[A.code].forEach(function(p){p.s.min+=dur;}); on[H.code].forEach(function(p){p.s.min+=dur;});
+    }
+    A.q.push(A.pts-a0); H.q.push(H.pts-h0);
+  }
+  for(var q=0;q<4;q++) period(12,q*12,q===3);
+  var ot=0; while(A.pts===H.pts && ot<6){ period(5,48+ot*5,true); ot++; }
+  return {sport:"nba",g:g,away:A,home:H,ot:ot};
+}
+
+// ---------- NFL ----------
+function nflPrep(code){
+  var T=NFL_TEAMS[code], sat=[];
+  function filt(list,si){ return list.filter(function(r){ var ok=rollStatus(r[si]); if(!ok) sat.push(r[0]); return ok; }); }
+  var qbs=filt(T.qb,7), rbs=filt(T.rb,4), recs=filt(T.rec,5);
+  var qb=qbs[0];
+  var st={}; function S(n,pos){ return st[n]||(st[n]={name:n,pos:pos,cmp:0,att:0,py:0,ptd:0,int:0,sk:0,car:0,ry:0,rtd:0,rl:0,tgt:0,rec:0,yds:0,td:0,lg:0}); }
+  S(qb[0],"QB"); rbs.forEach(function(r){S(r[0],"RB");}); recs.forEach(function(r){S(r[1]==="TE"?r[0]:r[0],r[1]);});
+  var targets=recs.map(function(r){return {n:r[0],w:r[2],cr:r[3],ypr:r[4]};})
+    .concat(rbs.map(function(r){return {n:r[0],w:r[3],cr:.78,ypr:7.5};}));
+  var qbShare=Math.min(.3,qb[5]/26);
+  var carriers=rbs.map(function(r){return {n:r[0],w:r[1]*(1-qbShare),ypc:r[2]};});
+  carriers.push({n:qb[0],w:qbShare,ypc:qb[6],qb:true});
+  return {code:code,T:T,qb:qb,targets:targets,carriers:carriers,st:st,S:S,sat:sat,
+    starters:[qb[0]].concat(rbs.slice(0,1).map(function(r){return r[0];}), recs.filter(function(r){return r[1]==="WR";}).slice(0,3).map(function(r){return r[0];}), recs.filter(function(r){return r[1]==="TE";}).slice(0,1).map(function(r){return r[0];})),
+    m:T.m||1, pts:0, q:[0,0,0,0], k:{fgm:0,fga:0,xpm:0,xpa:0,lg:0}};
+}
+function simNFL(g){
+  var A=nflPrep(g.away), H=nflPrep(g.home);
+  H.m*=1.01; A.m*=0.99;
+  var qtr=1, clock=900, ot=false, over=false;
+  var pos=R()<.5?A:H, recvSecond=pos===A?H:A;
+  function other(t){return t===A?H:A;}
+  function score(t,n){ t.pts+=n; t.q[Math.min(qtr,5)-1]=(t.q[Math.min(qtr,5)-1]||0)+n; }
+  function tick(sec){
+    var two=(qtr===2||qtr>=4)&&clock<=120; clock-= two? sec*.55 : sec;
+    if(clock<=0){
+      if(qtr===2){ qtr=3; clock=900; return "half"; }
+      if(qtr===4){ if(A.pts===H.pts && !ot){ ot=true; qtr=5; clock=600; return "ot"; } over=true; return "end"; }
+      if(qtr===5){ over=true; return "end"; }
+      qtr++; clock=900+clock;
+    }
+    return null;
+  }
+  function drive(off, start){
+    var def=other(off), d=start, down=1, togo=10, plays=0, m=off.m;
+    while(!over){
+      plays++;
+      var lead=off.pts-def.pts, late=qtr>=4, half2=qtr>=3;
+      if(qtr>=4 && clock<110 && lead>0 && lead<=16){ var e=tick(clock+1); return {end:"kneel",ev:e}; }
+      var pr=.56;
+      if(half2 && lead<-8) pr=.7; if(late && lead>8) pr=.4; if(late && lead<0 && clock<300) pr=.85;
+      if(down===3 && togo>=7) pr=.88; else if(down>=3 && togo<=2) pr=.4; else if(down===2 && togo>=8) pr=.66;
+      // 4th down
+      if(down===4){
+        var fgd=d+17, desperate = late && lead<0 && (clock<240 || lead<-8);
+        var go = desperate || (togo<=1 && d<=50 && R()<.45) || (togo<=2 && d<=40 && d>=4 && R()<.3) ;
+        if(!go){
+          if(fgd<=57 && d<=40){ off.k.fga++; var acc=off.T.k[1]*(fgd<30?1.09:fgd<40?1.05:fgd<50?.95:.72);
+            var e2=tick(5);
+            if(R()<Math.min(.995,acc)){ off.k.fgm++; off.k.lg=Math.max(off.k.lg,fgd); score(off,3); return {end:"fg",ev:e2}; }
+            return {end:"miss",next:100-d-7,ev:e2}; }
+          var e3=tick(8); var net=42+norm()*6, nd=100-(d-net); if(d-net<=0) nd=80; return {end:"punt",next:Math.min(95,Math.max(5,nd)),ev:e3};
+        }
+      }
+      var gain=0, ev, sec;
+      if(R()<pr){
+        var qs=off.S(off.qb[0],"QB");
+        if(R()<off.qb[4]/Math.sqrt(m)){ qs.sk++; gain=-Math.round(6+norm()*2); sec=34; }
+        else {
+          qs.att++;
+          if(R()<off.qb[3]/m){ qs.int++; ev=tick(8); return {end:"int",next:Math.min(95,Math.max(10,100-d+2+Math.round(norm()*8))),ev:ev}; }
+          var tg=pickW(off.targets,function(t){return t.w;}), rs=off.S(tg.n); rs.tgt++;
+          var cp=tg.cr*(off.qb[1]/.655)*Math.pow(m,.45);
+          if(R()<Math.min(.92,cp)){
+            var y=Math.round(tg.ypr*Math.pow(m,.7)*(.3+.7*-Math.log(1-R())*1.0));
+            if(R()<.04) y=Math.round(-1+R()*3);
+            gain=Math.min(y,d); qs.cmp++; qs.py+=gain; rs.rec++; rs.yds+=gain; rs.lg=Math.max(rs.lg,gain);
+            if(R()<.004){ ev=tick(30); return {end:"fum",next:100-d+gain,ev:ev}; }
+            if(gain>=d){ qs.ptd++; rs.td++; ev=tick(10); return td(off,ev); }
+            sec=33;
+          } else { gain=0; sec=6; }
+        }
+      } else {
+        var c=pickW(off.carriers,function(c){return c.w;}), cs=off.S(c.n);
+        var mean=c.ypc*Math.pow(m,.8)+2.2, y2=Math.round(-2.2 + -Math.log(1-R())*mean);
+        if(d<=3) y2=Math.min(y2, R()<.55?d:Math.round(R()*d));
+        gain=Math.min(y2,d); cs.car++; cs.ry+=gain; cs.rl=Math.max(cs.rl,gain);
+        if(R()<.006){ ev=tick(30); return {end:"fum",next:100-d+gain,ev:ev}; }
+        if(gain>=d){ cs.rtd++; ev=tick(8); return td(off,ev); }
+        sec=36;
+      }
+      d-=gain; togo-=gain;
+      if(d>=100){ ev=tick(5); score(def,2); return {end:"safety",ev:ev}; }
+      if(togo<=0){ down=1; togo=Math.min(10,d); } else if(down===4){ ev=tick(sec); return {end:"downs",next:100-d,ev:ev}; } else down++;
+      ev=tick(sec);
+      if(ev==="half"||ev==="end") return {end:"clock",ev:ev};
+      if(ev==="ot") return {end:"clock",ev:ev};
+    }
+    return {end:"clock",ev:"end"};
+  }
+  function td(off,ev){ score(off,6); off.k.xpa++; if(R()<.95){off.k.xpm++; score(off,1);} return {end:"td",ev:ev}; }
+  var start=70+Math.round(norm()*5), guard=0, otPoss=0;
+  while(!over && guard++<60){
+    var res=drive(pos,start);
+    if(over) break;
+    if(res.ev==="half"){ pos=recvSecond; start=70+Math.round(norm()*5); continue; }
+    if(res.ev==="ot"){ pos=R()<.5?A:H; start=70; otPoss=0; continue; }
+    if(qtr===5){ otPoss++; if(res.end==="td" || (otPoss>=2 && A.pts!==H.pts) || (res.end==="safety")) { over=true; break; } }
+    var nxt;
+    if(res.end==="td"||res.end==="fg") nxt=70+Math.round(norm()*5);
+    else if(res.end==="safety") nxt=60;
+    else nxt=res.next;
+    pos=other(pos); start=Math.max(1,Math.min(99,Math.round(nxt)));
+  }
+  return {sport:"nfl",g:g,away:A,home:H,ot:A.q[4]!=null||H.q[4]!=null};
+}
+if (typeof module!=="undefined") module.exports={simNBA,simNFL};
+
+</script>
+<script>
+(function(){
+var league="NFL", last=null, tab="away";
+var $=function(id){return document.getElementById(id);};
+function et(iso){ return new Date(iso).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:"America/New_York"})+" ET"; }
+function started(iso){ return Date.now()>=new Date(iso).getTime(); }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+function countQ(T,sport){ var q=0; if(sport==="NBA") T.p.forEach(function(r){ if(r[17]==="Q"||r[17]==="D") q++; });
+  else ["qb","rb","rec"].forEach(function(k){ T[k].forEach(function(r){ var s=r[r.length-1]; if(s==="Q"||s==="D") q++; }); }); return q; }
+function renderList(){
+  $("bNFL").setAttribute("aria-pressed",league==="NFL"); $("bNBA").setAttribute("aria-pressed",league==="NBA");
+  var games = league==="NFL"?NFL_GAMES:NBA_GAMES, TT = league==="NFL"?NFL_TEAMS:NBA_TEAMS, h="";
+  games.forEach(function(g,i){
+    var a=TT[g.away], hm=TT[g.home];
+    var odds = league==="NFL" ? (g.spread+" · O/U "+g.total) : ("Win prob "+Math.round(g.wp[0])+"% – "+Math.round(g.wp[1])+"%");
+    var outs=a.out.length+hm.out.length, qs=countQ(a,league)+countQ(hm,league);
+    h+='<button class="card" data-i="'+i+'"><div class="top"><span>'+(started(g.time)?'<span class="live">Started · </span>':'')+et(g.time)+(g.note?' · '+esc(g.note):'')+'</span><span class="cta">Simulate</span></div>'+
+      '<div class="row"><span class="tm">'+g.away+'<small>'+esc(a.name)+'</small></span></div>'+
+      '<div class="row"><span class="tm">@ '+g.home+'<small>'+esc(hm.name)+'</small></span></div>'+
+      '<div class="row"><span class="odds">'+odds+'</span><span class="inj">'+outs+' out · '+qs+' questionable</span></div></button>';
+  });
+  $("list").innerHTML=h;
+  Array.prototype.forEach.call(document.querySelectorAll(".card"),function(c){ c.onclick=function(){ openGame(games[+c.dataset.i]); }; });
+}
+$("bNFL").onclick=function(){league="NFL";renderList();};
+$("bNBA").onclick=function(){league="NBA";renderList();};
+
+function openGame(g){ tab="away"; $("listView").hidden=true; $("boardView").hidden=false; run(g); window.scrollTo(0,0); }
+function close(){ $("boardView").hidden=true; $("listView").hidden=false; }
+function run(g){ last = league==="NFL" ? simNFL(g) : simNBA(g); renderBoard(true); }
+
+function lineScore(r){
+  var n=Math.max(r.away.q.length,r.home.q.length), lab=[];
+  for(var i=0;i<n;i++) lab.push(i<4?String(i+1):(league==="NBA"&&n>5?"OT"+(i-3):"OT"));
+  var h='<div class="ls"><table><thead><tr><th></th>'+lab.map(function(l){return '<th>'+l+'</th>';}).join("")+'<th>T</th></tr></thead><tbody>';
+  [r.away,r.home].forEach(function(t){ h+='<tr><td>'+t.code+'</td>'; for(var i=0;i<n;i++) h+='<td>'+(t.q[i]||0)+'</td>'; h+='<td><b>'+t.pts+'</b></td></tr>'; });
+  return h+'</tbody></table></div>';
+}
+function renderBoard(animate){
+  var r=last, g=r.g, A=r.away, H=r.home, TT=league==="NFL"?NFL_TEAMS:NBA_TEAMS;
+  var fin = r.ot ? "Final / OT" : "Final";
+  var h='<div class="wrap" style="max-width:none"><button class="back" id="back">← All games</button><div class="board">'+
+    '<div class="score"><div class="side"><span class="nm">'+esc(TT[g.away].name)+'</span><span class="city">'+g.away+' · away</span><span class="pts'+(A.pts>H.pts?' w':'')+'" id="pa">'+A.pts+'</span></div>'+
+    '<div class="mid">'+fin+'</div>'+
+    '<div class="side r"><span class="nm">'+esc(TT[g.home].name)+'</span><span class="city">'+g.home+' · home</span><span class="pts'+(H.pts>A.pts?' w':'')+'" id="ph">'+H.pts+'</span></div></div>'+
+    lineScore(r)+'<div class="actions"><button class="run" id="again">Simulate again</button></div></div>'+
+    '<div class="tabs" role="tablist"><button role="tab" id="tA" aria-selected="'+(tab==="away")+'">'+g.away+' box</button><button role="tab" id="tH" aria-selected="'+(tab==="home")+'">'+g.home+' box</button></div>'+
+    '<div id="boxes"></div></div>';
+  $("boardView").innerHTML=h;
+  $("back").onclick=close; $("again").onclick=function(){ run(g); };
+  $("tA").onclick=function(){tab="away";renderBoard(false);}; $("tH").onclick=function(){tab="home";renderBoard(false);};
+  var t = tab==="away"?A:H;
+  $("boxes").innerHTML = (league==="NFL"?nflBox(t):nbaBox(t)) + availability(t);
+  if(animate && !matchMedia("(prefers-reduced-motion: reduce)").matches) countUp();
+}
+function countUp(){
+  var a=$("pa"), h=$("ph"), ta=+a.textContent, th=+h.textContent, t0=performance.now(), D=900;
+  function f(now){ var k=Math.min(1,(now-t0)/D), e=1-Math.pow(1-k,3); a.textContent=Math.round(ta*e); h.textContent=Math.round(th*e); if(k<1) requestAnimationFrame(f); }
+  requestAnimationFrame(f);
+}
+function availability(t){
+  var h='<div class="sec"><h3>Availability this run</h3><div class="avail">';
+  t.T.out.forEach(function(o){ h+='<span class="chip o">Out · '+esc(o)+'</span>'; });
+  if(league==="NBA"){
+    t.act.forEach(function(p){ if(p.status==="Q"||p.status==="D"||p.status==="P") h+='<span class="chip ok">'+(p.status==="D"?"Doubtful":p.status==="P"?"Probable":"Questionable")+' · '+esc(p.name)+' played</span>'; });
+    t.sat.forEach(function(p){ h+='<span class="chip q">'+(p.status==="D"?"Doubtful":"Questionable")+' · '+esc(p.name)+' sat</span>'; });
+  } else {
+    var flagged={}; ["qb","rb","rec"].forEach(function(k){ t.T[k].forEach(function(r){ var s=r[r.length-1]; if(s) flagged[r[0]]=s; }); });
+    Object.keys(flagged).forEach(function(n){ var sat=t.sat.indexOf(n)>=0, s=flagged[n]==="D"?"Doubtful":"Questionable";
+      h+='<span class="chip '+(sat?'q':'ok')+'">'+s+' · '+esc(n)+(sat?' sat':' played')+'</span>'; });
+  }
+  if(/avail">$/.test(h)) h+='<span class="chip">No injury designations</span>';
+  return h+'</div></div>';
+}
+function nbaBox(t){
+  var ps=t.act.filter(function(p){return p.s.min>0;}).sort(function(a,b){ return (b.start-a.start) || (b.s.min-a.s.min); });
+  var h='<div class="sec"><h3>'+esc(t.T.city+" "+t.T.name)+' · dot = starter</h3><div class="box"><table><thead>'+
+   '<tr><th></th><th colspan="4">Scoring</th><th colspan="3">Shooting</th><th colspan="5" class="grp">Defense</th><th colspan="2"></th></tr>'+
+   '<tr><th>Player</th><th>Min</th><th>Pts</th><th>Reb</th><th>Ast</th><th>FG</th><th>3PT</th><th>FT</th><th>OReb</th><th class="grp">DReb</th><th class="grp">Stl</th><th class="grp">Blk</th><th class="grp">PF</th><th>TO</th><th>+/-</th></tr></thead><tbody>';
+  var T={min:0,pts:0,fgm:0,fga:0,tpm:0,tpa:0,ftm:0,fta:0,oreb:0,dreb:0,ast:0,stl:0,blk:0,pf:0,tov:0}, firstBench=true;
+  ps.forEach(function(p){ var s=p.s; for(var k in T) T[k]+=s[k];
+    var cls=""; if(!p.start && firstBench){ cls=' class="bench-start"'; firstBench=false; }
+    h+='<tr'+cls+'><td>'+(p.start?'<span class="st"></span>':'')+esc(p.name)+'<span class="pos">'+p.pos+'</span></td><td>'+Math.round(s.min)+'</td><td><b>'+s.pts+'</b></td><td>'+(s.oreb+s.dreb)+'</td><td>'+s.ast+'</td><td>'+s.fgm+'-'+s.fga+'</td><td>'+s.tpm+'-'+s.tpa+'</td><td>'+s.ftm+'-'+s.fta+'</td><td>'+s.oreb+'</td><td>'+s.dreb+'</td><td>'+s.stl+'</td><td>'+s.blk+'</td><td>'+s.pf+'</td><td>'+s.tov+'</td><td>'+(s.pm>0?'+':'')+s.pm+'</td></tr>';
+  });
+  h+='<tr class="tot"><td>Team</td><td>'+Math.round(T.min)+'</td><td>'+T.pts+'</td><td>'+(T.oreb+T.dreb)+'</td><td>'+T.ast+'</td><td>'+T.fgm+'-'+T.fga+'</td><td>'+T.tpm+'-'+T.tpa+'</td><td>'+T.ftm+'-'+T.fta+'</td><td>'+T.oreb+'</td><td>'+T.dreb+'</td><td>'+T.stl+'</td><td>'+T.blk+'</td><td>'+T.pf+'</td><td>'+T.tov+'</td><td></td></tr>';
+  var pct=function(a,b){return b?(100*a/b).toFixed(1)+"%":"–";};
+  h+='</tbody></table></div><p class="note">FG '+pct(T.fgm,T.fga)+' · 3PT '+pct(T.tpm,T.tpa)+' · FT '+pct(T.ftm,T.fta)+'</p></div>';
+  return h;
+}
+function nflBox(t){
+  var st=Object.keys(t.st).map(function(k){return t.st[k];}), starters=t.starters;
+  function nm(p){ return (starters.indexOf(p.name)>=0?'<span class="st"></span>':'')+esc(p.name)+'<span class="pos">'+p.pos+'</span>'; }
+  var h='<div class="sec"><h3>'+esc(t.T.name)+' · dot = projected starter</h3>';
+  var pass=st.filter(function(p){return p.att>0||p.sk>0;});
+  h+='<h3>Passing</h3><div class="box"><table><thead><tr><th>Player</th><th>C/Att</th><th>Yds</th><th>Avg</th><th>TD</th><th>Int</th><th>Sacked</th></tr></thead><tbody>';
+  pass.forEach(function(p){ h+='<tr><td>'+nm(p)+'</td><td>'+p.cmp+'/'+p.att+'</td><td><b>'+p.py+'</b></td><td>'+(p.att?(p.py/p.att).toFixed(1):'0.0')+'</td><td>'+p.ptd+'</td><td>'+p.int+'</td><td>'+p.sk+'</td></tr>'; });
+  h+='</tbody></table></div>';
+  var rush=st.filter(function(p){return p.car>0;}).sort(function(a,b){return b.ry-a.ry;});
+  h+='<h3>Rushing</h3><div class="box"><table><thead><tr><th>Player</th><th>Car</th><th>Yds</th><th>Avg</th><th>TD</th><th>Long</th></tr></thead><tbody>';
+  rush.forEach(function(p){ h+='<tr><td>'+nm(p)+'</td><td>'+p.car+'</td><td><b>'+p.ry+'</b></td><td>'+(p.ry/p.car).toFixed(1)+'</td><td>'+p.rtd+'</td><td>'+p.rl+'</td></tr>'; });
+  h+='</tbody></table></div>';
+  var rec=st.filter(function(p){return p.tgt>0;}).sort(function(a,b){return b.yds-a.yds;});
+  h+='<h3>Receiving</h3><div class="box"><table><thead><tr><th>Player</th><th>Tgt</th><th>Rec</th><th>Yds</th><th>Avg</th><th>TD</th><th>Long</th></tr></thead><tbody>';
+  rec.forEach(function(p){ h+='<tr><td>'+nm(p)+'</td><td>'+p.tgt+'</td><td>'+p.rec+'</td><td><b>'+p.yds+'</b></td><td>'+(p.rec?(p.yds/p.rec).toFixed(1):'0.0')+'</td><td>'+p.td+'</td><td>'+p.lg+'</td></tr>'; });
+  h+='</tbody></table></div>';
+  var k=t.k;
+  h+='<h3>Kicking</h3><div class="box"><table><thead><tr><th>Player</th><th>FG</th><th>Long</th><th>XP</th><th>Pts</th></tr></thead><tbody><tr><td>'+esc(t.T.k[0])+'<span class="pos">K</span></td><td>'+k.fgm+'/'+k.fga+'</td><td>'+(k.lg||'–')+'</td><td>'+k.xpm+'/'+k.xpa+'</td><td><b>'+(k.fgm*3+k.xpm)+'</b></td></tr></tbody></table></div></div>';
+  return h;
+}
+renderList();
+})();
+</script>
+</body></html>
