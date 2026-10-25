@@ -100,7 +100,7 @@ tr.bench-start td{border-top:1px dashed var(--muted)}
 // NBA row: [name, pos, starter, min, fga, fg3a, fg3p, fg2p, fta, ftp, ast, oreb, dreb, stl, blk, tov, pf, status]
 // status: "" active, "Q" questionable, "D" doubtful, "P" probable
 var NBA_TEAMS = {
-LAL:{name:"Lakers",city:"Los Angeles",r:1.5,out:["Cameron Carr (oblique)","Adou Thiero (knee)"],p:[
+LAL:{name:"Lakers",city:"Los Angeles",r:1,out:["Cameron Carr (oblique)","Adou Thiero (knee)"],p:[
 ["Luka Doncic","PG",1,36,21,9,.36,.55,8,.78,8.5,.8,7.5,1.6,.4,3.8,2.5,""],
 ["Austin Reaves","SG",1,34,15,6,.37,.55,6,.87,5.5,.5,3.8,1.1,.3,2.4,2.2,""],
 ["Ziaire Williams","SF",1,26,8,3.5,.35,.55,1.5,.78,1.2,.7,3,.9,.4,.9,2.3,""],
@@ -119,7 +119,7 @@ UTA:{name:"Jazz",city:"Utah",r:-4,out:["Jusuf Nurkic (toe)"],p:[
 ["Jaxson Hayes","C",0,18,5,0,.2,.70,1.5,.65,.8,1.6,3,.5,1,.8,2.3,""],
 ["Svi Mykhailiuk","G-F",0,16,6,4,.37,.5,.8,.85,1.4,.3,1.8,.5,.1,.6,1.3,""],
 ["Kyle Filipowski","C",0,14,5,1.5,.32,.54,1.2,.7,1.5,1.2,3,.5,.4,.9,1.6,""]]},
-IND:{name:"Pacers",city:"Indiana",r:0.5,out:["T.J. McConnell (hamstring)","Ben Sheppard (knee)","Johnny Furphy (ACL)"],p:[
+IND:{name:"Pacers",city:"Indiana",r:0,out:["T.J. McConnell (hamstring)","Ben Sheppard (knee)","Johnny Furphy (ACL)"],p:[
 ["Tyrese Haliburton","PG",1,34,14,7,.37,.52,2.8,.86,9.5,.5,3.2,1.3,.6,2.2,1.4,""],
 ["Andrew Nembhard","SG",1,31,11,3.5,.35,.52,2.5,.82,5,.4,2.5,1,.2,1.8,2.5,""],
 ["Aaron Nesmith","SF",1,28,9,5,.40,.55,2.5,.82,1.4,.8,3.6,.8,.5,1,3,"P"],
@@ -129,7 +129,7 @@ IND:{name:"Pacers",city:"Indiana",r:0.5,out:["T.J. McConnell (hamstring)","Ben S
 ["Quenton Jackson","G",0,18,6.5,2.5,.34,.53,1.5,.8,2.4,.3,1.4,1,.2,1.1,2,""],
 ["Jarace Walker","F",0,18,6,2.5,.34,.52,1.2,.7,1.8,1,2.8,.7,.6,1.2,2.1,""],
 ["Jay Huff","C",0,12,4,2,.36,.62,.8,.7,.6,.7,2.2,.4,1.1,.5,1.4,""]]},
-BKN:{name:"Nets",city:"Brooklyn",r:-4.5,out:["Tyler Bilodeau (shoulder)","Mikel Brown Jr."],p:[
+BKN:{name:"Nets",city:"Brooklyn",r:-3.5,out:["Tyler Bilodeau (shoulder)","Mikel Brown Jr."],p:[
 ["Egor Demin","PG",1,31,11,7,.36,.48,2.5,.85,5.5,.4,3,.8,.4,2.2,2.4,""],
 ["Keon Ellis","SG",1,27,7,5,.38,.52,.8,.85,1.5,.5,2,1.6,.6,.9,2.4,""],
 ["Michael Porter Jr.","SF",1,33,17,8,.39,.56,4,.85,2.5,1.6,5.8,1,.5,1.8,2.6,""],
@@ -137,7 +137,7 @@ BKN:{name:"Nets",city:"Brooklyn",r:-4.5,out:["Tyler Bilodeau (shoulder)","Mikel 
 ["Day'Ron Sharpe","C",1,25,7,1,.3,.58,2,.65,1.8,3,4.5,.8,.7,1.4,3,""],
 ["Chaney Johnson","G-F",0,26,9,3.5,.34,.48,1.5,.72,2,1.1,2.5,.9,.3,.9,2,""],
 ["Nolan Traore","G",0,24,7,2.5,.31,.47,2,.78,3.4,.3,1.4,.6,.1,1.6,1.8,""]]},
-LAC:{name:"Clippers",city:"LA",r:-3,out:["Bradley Beal (knee)","Brandon Ingram (Achilles)","Max Strus (foot)","Jordan Miller (shoulder)","Yanic Konan Niederhauser (foot)"],p:[
+LAC:{name:"Clippers",city:"LA",r:-2,out:["Bradley Beal (knee)","Brandon Ingram (Achilles)","Max Strus (foot)","Jordan Miller (shoulder)","Yanic Konan Niederhauser (foot)"],p:[
 ["Darius Garland","PG",1,33,16,6.5,.38,.50,3.5,.86,6.5,.4,2.4,1,.1,3,2,""],
 ["Kris Dunn","SG",1,26,6,3,.34,.5,1,.7,3.5,.6,2.8,1.5,.4,1.2,2.6,""],
 ["Rui Hachimura","SF",1,30,12,4,.40,.55,2.5,.78,1.3,.9,4,.7,.3,1,1.7,""],
@@ -147,7 +147,7 @@ LAC:{name:"Clippers",city:"LA",r:-3,out:["Bradley Beal (knee)","Brandon Ingram (
 ["Keaton Wagler","G",0,22,9,4,.34,.48,3,.8,2.8,.4,2,.8,.2,1.6,1.8,""],
 ["Kobe Sanders","G",0,19,6,2.5,.35,.5,1,.78,3,.3,1.8,.6,.2,1.2,1.6,""],
 ["Gradey Dick","G-F",0,18,7,4.5,.36,.55,1,.85,1,.3,1.8,.5,.2,.6,1.4,""]]},
-OKC:{name:"Thunder",city:"Oklahoma City",r:8,out:["Thomas Sorber (knee)","Nikola Topic (back)","Otega Oweh (Achilles)"],p:[
+OKC:{name:"Thunder",city:"Oklahoma City",r:2,out:["Thomas Sorber (knee)","Nikola Topic (back)","Otega Oweh (Achilles)"],p:[
 ["Shai Gilgeous-Alexander","PG",1,34,20,5.5,.37,.58,8.5,.89,6.5,.6,4.5,1.6,1,2.3,2.2,""],
 ["Cason Wallace","SG",1,28,8,4,.37,.55,1.2,.8,2.5,.5,2.8,1.7,.5,1,2.2,""],
 ["Jalen Williams","SF",1,32,16,4.5,.36,.55,4.5,.82,5,.8,4.5,1.4,.6,2.2,2.4,""],
@@ -157,7 +157,7 @@ OKC:{name:"Thunder",city:"Oklahoma City",r:8,out:["Thomas Sorber (knee)","Nikola
 ["Alex Caruso","G",0,20,5,3,.35,.52,1,.8,2,.5,2.2,1.5,.4,.8,2.2,""],
 ["Jaylin Williams","F-C",0,16,5,3.5,.38,.52,1,.7,1.5,1,3.4,.5,.4,.7,2,""],
 ["Aaron Wiggins","G-F",0,14,7,3,.36,.55,1,.8,1.2,.7,2,.5,.2,.5,1.4,""]]},
-ORL:{name:"Magic",city:"Orlando",r:-0.5,out:["Paolo Banchero (ankle)","Jonathan Isaac (knee)","Noah Penda (hamstring)","Izaiyah Nelson (ankle)"],p:[
+ORL:{name:"Magic",city:"Orlando",r:0.5,out:["Paolo Banchero (ankle)","Jonathan Isaac (knee)","Noah Penda (hamstring)","Izaiyah Nelson (ankle)"],p:[
 ["Jalen Suggs","PG",1,30,12,5.5,.34,.52,3,.8,4.5,.8,3.2,1.6,.6,2,2.8,""],
 ["Desmond Bane","SG",1,33,15,6,.38,.53,3,.88,4,.5,3.6,1.1,.3,2,2.5,""],
 ["Franz Wagner","SF",1,34,17,5,.33,.55,5.5,.83,4.5,.9,4.8,1,.4,2,2,""],
@@ -168,7 +168,7 @@ ORL:{name:"Magic",city:"Orlando",r:-0.5,out:["Paolo Banchero (ankle)","Jonathan 
 ["Jase Richardson","G",0,18,7,3,.35,.5,1.6,.8,2,.3,1.5,.5,.1,.9,1.4,""],
 ["Goga Bitadze","C",0,14,3.5,0,.2,.62,1.2,.7,1.4,1.3,3,.4,.9,.7,2,""],
 ["Jevon Carter","G",0,12,4,2.5,.35,.45,.4,.8,1.4,.2,1,.6,.1,.5,1.2,""]]},
-NYK:{name:"Knicks",city:"New York",r:3,out:[],p:[
+NYK:{name:"Knicks",city:"New York",r:2,out:[],p:[
 ["Jalen Brunson","PG",1,35,20,6,.38,.52,7,.82,7,.5,2.8,.9,.1,2.6,2,""],
 ["Mikal Bridges","SG",1,35,14,5.5,.38,.55,2,.78,3.5,.7,3,1.3,.5,1.5,1.7,""],
 ["Josh Hart","SF",1,32,9,3,.35,.58,2.5,.75,5,2,6.5,1.4,.3,1.6,2.6,""],
@@ -179,7 +179,7 @@ NYK:{name:"Knicks",city:"New York",r:3,out:[],p:[
 ["Landry Shamet","G",0,15,5.5,4,.38,.5,.8,.9,1,.2,1.2,.5,.1,.5,1.6,""],
 ["Andre Drummond","C",0,14,4,0,.2,.55,1.8,.55,.8,2.5,4,1,.5,1,2,""],
 ["Jose Alvarado","G",0,14,5,3,.34,.5,.6,.75,2.5,.3,1.2,1.1,.1,.9,1.8,"Q"]]},
-TOR:{name:"Raptors",city:"Toronto",r:3,out:["Nate Bittle (foot)"],p:[
+TOR:{name:"Raptors",city:"Toronto",r:4,out:["Nate Bittle (foot)"],p:[
 ["Immanuel Quickley","PG",1,32,14,7,.37,.52,3,.86,5.5,.5,3.2,.9,.2,1.6,1.8,""],
 ["RJ Barrett","SG",1,33,15,4.5,.35,.55,5,.7,3.5,1,4.2,.7,.3,2.1,2.2,""],
 ["Kawhi Leonard","SF",1,32,17,5,.38,.55,4,.87,3.5,1.1,5.2,1.6,.5,1.8,1.6,""],
@@ -200,7 +200,7 @@ MIN:{name:"Timberwolves",city:"Minnesota",r:1.5,out:["Donte DiVincenzo (Achilles
 ["Joan Beringer","C",0,16,5,0,.2,.62,1.6,.6,.6,2.2,2.4,.4,1.2,.7,2,""],
 ["Bones Hyland","G",0,12,7,4.5,.37,.48,1.2,.85,2.2,.3,1,.6,.1,1,1.4,""],
 ["Jaylen Clark","G",0,10,2.5,1.2,.33,.5,.5,.75,.6,.5,1,.8,.1,.3,1.2,""]]},
-DET:{name:"Pistons",city:"Detroit",r:2.5,out:["Jalen Duren (hamstring)"],p:[
+DET:{name:"Pistons",city:"Detroit",r:3.5,out:["Jalen Duren (hamstring)"],p:[
 ["Cade Cunningham","PG",1,35,20,6,.36,.52,6.5,.84,9,.8,5.2,1.1,.8,3.6,2.4,""],
 ["Duncan Robinson","SG",1,28,9,7,.40,.55,1,.88,1.8,.2,2.2,.6,.2,.8,1.6,""],
 ["Ausar Thompson","SF",1,28,9,.8,.28,.56,2,.62,3,1.6,4,1.6,1,1.6,2.6,"Q"],
@@ -222,7 +222,7 @@ PHI:{name:"76ers",city:"Philadelphia",r:2,out:["LeBron James (back)","Dominick B
 ["Dean Wade","F",0,18,4,3,.37,.5,.6,.7,1.2,.7,3,.7,.4,.5,1.8,"Q"],
 ["Jabari Walker","F",0,14,5,2,.34,.55,1.5,.75,.8,1.2,2.6,.5,.3,.5,1.8,"Q"],
 ["Labaron Philon Jr.","G",0,12,5,2,.33,.45,1,.75,1.8,.3,1,.5,.1,.8,1.2,""]]},
-MEM:{name:"Grizzlies",city:"Memphis",r:0.5,out:["Zach Edey","Richie Saunders"],p:[
+MEM:{name:"Grizzlies",city:"Memphis",r:0,out:["Zach Edey","Richie Saunders"],p:[
 ["Ty Jerome","PG",1,30,15,5.5,.40,.55,3,.88,5.5,.5,2.6,1.2,.2,2.2,2,""],
 ["Cedric Coward","SG",1,26,9,4,.37,.55,2,.82,2,1,3.8,1,.5,1.2,2.2,"Q"],
 ["Jaylen Wells","SF",1,28,9,5,.36,.52,1.8,.8,1.6,.8,2.6,.9,.3,.9,2.6,""],
@@ -246,13 +246,13 @@ SAC:{name:"Kings",city:"Sacramento",r:-4,out:["Ben Simmons (Achilles)","Dylan Ca
 ["Nique Clifford","G",0,14,5,2,.34,.5,1,.78,1.4,.6,2,.5,.2,.7,1.4,""]]}
 };
 var NBA_GAMES = [
-{away:"LAL",home:"UTA",time:"2026-10-25T21:00:00Z",wp:[68.4,31.6]},
-{away:"IND",home:"BKN",time:"2026-10-25T22:00:00Z",wp:[69.8,30.2]},
-{away:"LAC",home:"OKC",time:"2026-10-25T23:00:00Z",wp:[9.2,90.8]},
-{away:"ORL",home:"NYK",time:"2026-10-25T23:00:00Z",wp:[28,72]},
-{away:"TOR",home:"MIN",time:"2026-10-25T23:00:00Z",wp:[50,50]},
-{away:"DET",home:"PHI",time:"2026-10-25T23:30:00Z",wp:[47.8,52.2]},
-{away:"MEM",home:"SAC",time:"2026-10-26T01:00:00Z",wp:[59.3,40.7]}
+{away:"LAL",home:"UTA",time:"2026-10-25T21:00:00Z",wp:[68.4,31.6],spread:"LAL -6.5",total:237.5},
+{away:"IND",home:"BKN",time:"2026-10-25T22:00:00Z",wp:[69.8,30.2],spread:"IND -6.5"},
+{away:"LAC",home:"OKC",time:"2026-10-25T23:00:00Z",wp:[9.2,90.8],spread:"OKC -15.5"},
+{away:"ORL",home:"NYK",time:"2026-10-25T23:00:00Z",wp:[28,72],spread:"NYK -6.5",total:221.5},
+{away:"TOR",home:"MIN",time:"2026-10-25T23:00:00Z",wp:[50,50],spread:"MIN -1.5",total:231.5},
+{away:"DET",home:"PHI",time:"2026-10-25T23:30:00Z",wp:[47.8,52.2],spread:"DET -1.5",total:227.5},
+{away:"MEM",home:"SAC",time:"2026-10-26T01:00:00Z",wp:[59.3,40.7],spread:"MEM -3.5"}
 ];
 
 // NFL. qb: [name, cmp%, yds/att, int%, sack%, rushAtt/g, ypc, status]
@@ -416,7 +416,7 @@ function chooseLineup(team, t, closing){
 }
 function simNBA(g){
   var A=nbaPrep(g.away), H=nbaPrep(g.home);
-  var pace=99+norm()*3.5, diff=(H.T.r - A.T.r);
+  var pace=(g.total? 99*g.total/226 : 99)+norm()*3.5, diff=(H.T.r - A.T.r);
   A.adj = -diff*0.0027 - 0.006; H.adj = diff*0.0027 + 0.006;
   A.tovm = 1 + diff*0.005; H.tovm = 1 - diff*0.005;
   var on={};
@@ -607,7 +607,7 @@ function renderList(){
   if(!games.length) h='<p class="note">No '+league+' games today.</p>';
   games.forEach(function(g,i){
     var a=TT[g.away], hm=TT[g.home];
-    var odds = league==="NFL" ? (g.spread+" · O/U "+g.total) : ("Win prob "+Math.round(g.wp[0])+"% – "+Math.round(g.wp[1])+"%");
+    var odds = (g.spread||"") + (g.total ? " · O/U "+g.total : "");
     var outs=a.out.length+hm.out.length, qs=countQ(a,league)+countQ(hm,league);
     h+='<button class="card" data-i="'+i+'"><div class="top"><span>'+(started(g.time)?'<span class="live">Started · </span>':'')+et(g.time)+(g.note?' · '+esc(g.note):'')+'</span><span class="cta">Simulate</span></div>'+
       '<div class="row"><span class="tm">'+g.away+'<small>'+esc(a.name)+'</small></span></div>'+
