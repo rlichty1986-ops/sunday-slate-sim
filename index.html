@@ -51,6 +51,7 @@ button:focus-visible,.card:focus-visible{outline:2px solid var(--accent);outline
 .score .pts.w{color:var(--accent)}
 .score .mid{font:600 .8rem var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center}
 .ls{overflow-x:auto}
+.ls td{transition:opacity .2s}
 table{border-collapse:collapse;font-family:var(--mono);font-size:.82rem;font-variant-numeric:tabular-nums;width:100%}
 th,td{padding:6px 7px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
 th{font:600 .72rem var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
@@ -687,17 +688,30 @@ function finishBatch(B){
       for(var f in keys) d+=Math.abs((s[k][f]||0)-(A[f]||0))/keys[f]; } });
     if(d<bd){bd=d;best=r;}
   });
-  sample=best; B.results=null; batch=B; render();
+  sample=best; B.results=null; batch=B; render(true);
 }
 
 // ---- rendering ----
-function render(){
+function render(animate){
   var TT=league==="NFL"?NFL_TEAMS:NBA_TEAMS, g=batch.g;
   $("boardView").innerHTML='<div class="wrap" style="max-width:none"><button class="back" id="back">← All games</button>'+singleBoardHTML(sample,TT,batch)+'</div>';
   $("back").onclick=close; $("again").onclick=function(){ runBatch(g); };
   $("tA").onclick=function(){tab="away";render();}; $("tH").onclick=function(){tab="home";render();};
   var t=tab==="away"?sample.away:sample.home;
   $("boxes").innerHTML=(league==="NFL"?nflBox(t):nbaBox(t))+availability(t);
+  if(animate) countUp();
+}
+function countUp(){
+  var a=$("pa"), h=$("ph"); if(!a||!h) return;
+  var ta=+a.textContent, th=+h.textContent, t0=performance.now(), D=1100;
+  var cells=document.querySelectorAll(".ls tbody td:not(:first-child)");
+  Array.prototype.forEach.call(cells,function(c){ c.dataset.v=c.innerHTML; c.style.opacity="0"; });
+  function f(now){ var k=Math.min(1,(now-t0)/D), e=1-Math.pow(1-k,3);
+    a.textContent=Math.round(ta*e); h.textContent=Math.round(th*e);
+    var cols=cells.length/2, show=Math.floor(k*cols);
+    Array.prototype.forEach.call(cells,function(c,i){ if(i%cols<show || k>=1) c.style.opacity="1"; });
+    if(k<1) requestAnimationFrame(f); }
+  requestAnimationFrame(f);
 }
 // ---- single typical game ----
 function singleBoardHTML(r,TT,B){
@@ -708,9 +722,9 @@ function singleBoardHTML(r,TT,B){
   [A,H].forEach(function(t){ ls+='<tr><td>'+t.code+'</td>'; for(var i=0;i<n;i++) ls+='<td>'+(t.q[i]||0)+'</td>'; ls+='<td><b>'+t.pts+'</b></td></tr>'; });
   ls+='</tbody></table></div>';
   var wins='Wins out of '+B.n.toLocaleString()+': '+g.away+' '+B.aw+' · '+g.home+' '+B.hw+(B.ties?' · Ties '+B.ties:'');
-  return '<div class="board"><p class="mid" style="font:600 .8rem var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0">Projected result from '+B.n.toLocaleString()+' simulations</p><div class="score"><div class="side"><span class="nm">'+esc(TT[g.away].name)+'</span><span class="city">'+g.away+' · away</span><span class="pts'+(A.pts>H.pts?' w':'')+'">'+A.pts+'</span></div>'+
+  return '<div class="board"><p class="mid" style="font:600 .8rem var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0">Projected result from '+B.n.toLocaleString()+' simulations</p><div class="score"><div class="side"><span class="nm">'+esc(TT[g.away].name)+'</span><span class="city">'+g.away+' · away</span><span class="pts'+(A.pts>H.pts?' w':'')+'" id="pa">'+A.pts+'</span></div>'+
     '<div class="mid">'+(r.ot?'Final / OT':'Final')+'</div>'+
-    '<div class="side r"><span class="nm">'+esc(TT[g.home].name)+'</span><span class="city">'+g.home+' · home</span><span class="pts'+(H.pts>A.pts?' w':'')+'">'+H.pts+'</span></div></div>'+ls+
+    '<div class="side r"><span class="nm">'+esc(TT[g.home].name)+'</span><span class="city">'+g.home+' · home</span><span class="pts'+(H.pts>A.pts?' w':'')+'" id="ph">'+H.pts+'</span></div></div>'+ls+
     '<p class="wins">'+wins+'</p><div class="actions"><button class="run" id="again">Run 1,000 again</button></div></div>'+
     '<div class="tabs" role="tablist"><button role="tab" id="tA" aria-selected="'+(tab==="away")+'">'+g.away+' box</button><button role="tab" id="tH" aria-selected="'+(tab==="home")+'">'+g.home+' box</button></div><div id="boxes"></div></div>';
 }
