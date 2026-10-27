@@ -731,6 +731,21 @@ function nflBox(t){
   return h;
 }
 renderList();
+window.__slateRender=function(){ if(!$("boardView").hidden) return; renderList(); };
 })();
 </script>
-<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(function(){});}</script></body></html>
+<script>
+(function(){
+  var URL="https://klvsilpivovqnhhgkqup.supabase.co/rest/v1/slate_sim?id=eq.current&select=sub,data,slate_date";
+  var KEY="sb_publishable_xxc9n8APO5QOLy7eXjBQHw_28HjlRE1";
+  fetch(URL,{headers:{apikey:KEY,Authorization:"Bearer "+KEY},cache:"no-store"})
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(rows){
+      var row=rows && rows[0]; if(!row || !row.data || !row.data.NFL_TEAMS) return;
+      var d=row.data;
+      NBA_TEAMS=d.NBA_TEAMS; NBA_GAMES=d.NBA_GAMES; NFL_TEAMS=d.NFL_TEAMS; NFL_GAMES=d.NFL_GAMES;
+      var sub=document.getElementById("sub"); if(sub && row.sub) sub.textContent=row.sub;
+      if(window.__slateRender) window.__slateRender();
+    }).catch(function(){});
+})();
+</script><script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(function(){});}</script></body></html>
